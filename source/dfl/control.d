@@ -1140,28 +1140,23 @@ class Control: DObject, IWindow // docmain
 		}
 	}
 	
-	
-	/+
-	deprecated void anchor(AnchorStyles a) // setter
+
+	void anchor(AnchorStyles a) // setter
 	{
-		/+
 		anch = a;
 		if(!(anch & (AnchorStyles.LEFT | AnchorStyles.RIGHT)))
 			anch |= AnchorStyles.LEFT;
 		if(!(anch & (AnchorStyles.TOP | AnchorStyles.BOTTOM)))
 			anch |= AnchorStyles.TOP;
-		+/
-		
+
 		sdock = DockStyle.NONE; // Can't be set at the same time.
 	}
 	
 	
-	deprecated AnchorStyles anchor() // getter
+	AnchorStyles anchor() // getter
 	{
-		//return anch;
-		return cast(AnchorStyles)(AnchorStyles.LEFT | AnchorStyles.TOP);
+		return anch;
 	}
-	+/
 	
 	
 	private void _propagateBackColorAmbience()
@@ -1252,15 +1247,13 @@ class Control: DObject, IWindow // docmain
 	{
 		return wrect;
 	}
-	
-	
-	/+
+
+
 	final @property Rect originalBounds() // getter package
 	{
 		return oldwrect;
 	}
-	+/
-	
+
 	
 	///
 	protected void setBoundsCore(int x, int y, int width, int height, BoundsSpecified specified)
@@ -1324,7 +1317,7 @@ class Control: DObject, IWindow // docmain
 				wclientsz.height = height;
 			}
 			
-			//oldwrect = wrect;
+			oldwrect = wrect;
 		}
 	}
 	
@@ -1814,9 +1807,7 @@ class Control: DObject, IWindow // docmain
 		
 		DockStyle _olddock = sdock;
 		sdock = ds;
-		/+
 		anch = AnchorStyles.NONE; // Can't be set at the same time.
-		+/
 		
 		if(DockStyle.NONE == ds)
 		{
@@ -5789,12 +5780,10 @@ class Control: DObject, IWindow // docmain
 					}
 				}
 				break;
-			
-			/+
+
 			case WM_WINDOWPOSCHANGING:
-				//oldwrect = wrect;
+				oldwrect = wrect;
 				break;
-			+/
 			
 			/+
 			case WM_SETFONT:
@@ -5905,7 +5894,7 @@ class Control: DObject, IWindow // docmain
 					+/
 					
 					wrect = _fetchBounds();
-					//oldwrect = wrect;
+					oldwrect = wrect;
 					wclientsz = _fetchClientSize();
 				}
 				break;
@@ -6154,7 +6143,7 @@ class Control: DObject, IWindow // docmain
 		//name = DObject.toString(); // ?
 		
 		wrect.size = defaultSize;
-		//oldwrect = wrect;
+		oldwrect = wrect;
 		
 		/+
 		backc = defaultBackColor;
@@ -6866,13 +6855,17 @@ class Control: DObject, IWindow // docmain
 			if(ctrl._rtype() & (2 | 4)) // Mdichild | Tabpage
 				continue;
 			
-			//Rect prevctrlbounds;
-			//prevctrlbounds = ctrl.bounds;
-			//ctrl.suspendLayout(); // Note: exception could cause failure to restore.
+			Rect prevctrlbounds;
+			prevctrlbounds = ctrl.bounds;
+			ctrl.suspendLayout();
+			scope(exit)
+			{
+				ctrl.resumeLayout(true);
+				ctrl.resumeLayout(prevctrlbounds != ctrl.bounds);
+			}
 			switch(ctrl.sdock)
 			{
 				case DockStyle.NONE:
-					/+
 					if(ctrl.anch & (AnchorStyles.RIGHT | AnchorStyles.BOTTOM)) // If none of these are set, no point in doing any anchor code.
 					{
 						Rect newb;
@@ -6894,42 +6887,39 @@ class Control: DObject, IWindow // docmain
 						if(newb != ctrl.bounds)
 							ctrl.bounds = newb;
 					}
-					+/
 					break;
-				
+
 				case DockStyle.LEFT:
 					ctrl.setBoundsCore(area.x, area.y, 0, area.height, cast(BoundsSpecified)(BoundsSpecified.LOCATION | BoundsSpecified.HEIGHT));
 					area.x = area.x + ctrl.width;
 					area.width = area.width - ctrl.width;
 					break;
-				
+
 				case DockStyle.TOP:
 					ctrl.setBoundsCore(area.x, area.y, area.width, 0, cast(BoundsSpecified)(BoundsSpecified.LOCATION | BoundsSpecified.WIDTH));
 					area.y = area.y + ctrl.height;
 					area.height = area.height - ctrl.height;
 					break;
-				
+
 				case DockStyle.FILL:
 					//ctrl.bounds(Rect(area.x, area.y, area.width, area.height));
 					ctrl.bounds = area;
 					// area = ?
 					break;
-				
+
 				case DockStyle.BOTTOM:
 					ctrl.setBoundsCore(area.x, area.bottom - ctrl.height, area.width, 0, cast(BoundsSpecified)(BoundsSpecified.LOCATION | BoundsSpecified.WIDTH));
 					area.height = area.height - ctrl.height;
 					break;
-				
+
 				case DockStyle.RIGHT:
 					ctrl.setBoundsCore(area.right - ctrl.width, area.y, 0, area.height, cast(BoundsSpecified)(BoundsSpecified.LOCATION | BoundsSpecified.HEIGHT));
 					area.width = area.width - ctrl.width;
 					break;
-				
+
 				default:
 					assert(0);
 			}
-			//ctrl.resumeLayout(true);
-			//ctrl.resumeLayout(prevctrlbounds != ctrl.bounds);
 		}
 		
 		layout(this, lea);
@@ -7145,7 +7135,7 @@ class Control: DObject, IWindow // docmain
 	
 	package:
 	HWND hwnd;
-	//AnchorStyles anch = cast(AnchorStyles)(AnchorStyles.TOP | AnchorStyles.LEFT);
+	AnchorStyles anch = cast(AnchorStyles)(AnchorStyles.TOP | AnchorStyles.LEFT);
 	//bool cvalidation = true;
 	version(DFL_NO_MENUS)
 	{
@@ -7159,7 +7149,7 @@ class Control: DObject, IWindow // docmain
 	Object otag;
 	Color backc, forec;
 	Rect wrect;
-	//Rect oldwrect;
+	Rect oldwrect;
 	Size wclientsz;
 	Cursor wcurs;
 	Font wfont;
